@@ -95,6 +95,26 @@ float Line2D::get_width() const {
 	return _width;
 }
 
+void Line2D::set_curve(const Ref<Curve> &curve) {
+	// Cleanup previous connection if any
+	if (_curve.is_valid()) {
+		(**_curve).disconnect(CoreStringNames::get_singleton()->changed, this, "_curve_changed");
+	}
+
+	_curve = curve;
+
+	// Connect to the gradient so the line will update when the ColorRamp is changed
+	if (_curve.is_valid()) {
+		(**_curve).connect(CoreStringNames::get_singleton()->changed, this, "_curve_changed");
+	}
+
+	update();
+}
+
+Ref<Curve> Line2D::get_curve() const {
+	return _curve;
+}
+
 PoolVector<Vector2> Line2D::get_points() const {
 	return _points;
 }
@@ -267,6 +287,7 @@ void Line2D::_draw() {
 	lb.round_precision = _round_precision;
 	lb.sharp_limit = _sharp_limit;
 	lb.width = _width;
+	lb.curve = *_curve;
 
 	RID texture_rid;
 	if (_texture.is_valid()) {
@@ -311,6 +332,10 @@ void Line2D::_gradient_changed() {
 	update();
 }
 
+void Line2D::_curve_changed() {
+	update();
+}
+
 // static
 void Line2D::_bind_methods() {
 
@@ -329,6 +354,9 @@ void Line2D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_width", "width"), &Line2D::set_width);
 	ClassDB::bind_method(D_METHOD("get_width"), &Line2D::get_width);
+
+	ClassDB::bind_method(D_METHOD("set_curve", "curve"), &Line2D::set_curve);
+	ClassDB::bind_method(D_METHOD("get_curve"), &Line2D::get_curve);
 
 	ClassDB::bind_method(D_METHOD("set_default_color", "color"), &Line2D::set_default_color);
 	ClassDB::bind_method(D_METHOD("get_default_color"), &Line2D::get_default_color);
@@ -359,6 +387,7 @@ void Line2D::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::POOL_VECTOR2_ARRAY, "points"), "set_points", "get_points");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "width"), "set_width", "get_width");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "width_curve", PROPERTY_HINT_RESOURCE_TYPE, "Curve"), "set_curve", "get_curve");
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "default_color"), "set_default_color", "get_default_color");
 	ADD_GROUP("Fill", "");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "gradient", PROPERTY_HINT_RESOURCE_TYPE, "Gradient"), "set_gradient", "get_gradient");
@@ -385,4 +414,5 @@ void Line2D::_bind_methods() {
 	BIND_ENUM_CONSTANT(LINE_TEXTURE_STRETCH);
 
 	ClassDB::bind_method(D_METHOD("_gradient_changed"), &Line2D::_gradient_changed);
+	ClassDB::bind_method(D_METHOD("_curve_changed"), &Line2D::_curve_changed);
 }
